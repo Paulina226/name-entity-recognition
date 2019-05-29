@@ -76,3 +76,31 @@ sgd = SGDClassifier()
 sgd.partial_fit(X_train, y_train, tags)
 sgd_y_pred = sgd.predict(X_test)
 print(classification_report(y_pred=sgd_y_pred, y_true=y_test, labels=new_tags))
+
+# ==== CLASSIFICATION USING CONDITIONAL RANDOM FIELDS ====
+
+sentence_extractor = SentenceExtractor("Sentence #")
+labeled_sentences = sentence_extractor.extract(data_frame)
+
+feature_extractor = FeatureExtractor()
+X = feature_extractor.sentences2features(labeled_sentences)
+y = feature_extractor.sentences2labels(labeled_sentences)
+
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.33, random_state=0)
+
+crf = CRF(algorithm='lbfgs', c1=0.1, c2=0.1, max_iterations=100, all_possible_transitions=True)
+crf.fit(X_train, y_train)
+
+y_pred = crf.predict(X_test)
+print(flat_classification_report(y_test, y_pred, labels=new_tags))
+
+# what was learned
+def print_state_features(state_features):
+    for (attr, label), weight in state_features:
+        print("%0.4f %-8s %s" % (weight, label, attr))
+
+
+print("Top positive:")
+print_state_features(Counter(crf.state_features_).most_common(10))
+print("\n Top negative:")
+print_state_features(Counter(crf.state_features_).most_common()[-10:])
